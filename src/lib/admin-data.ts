@@ -88,3 +88,57 @@ export async function adminSignups(db: SupabaseClient, eveningId: string): Promi
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
 }
+
+export type AdminGame = {
+  id: string;
+  evening_id: string;
+  game_no: number;
+  format: "classic10" | "short9";
+  status: "in_progress" | "finished";
+  winner: "red" | "black" | "draw" | null;
+  host_player_id: string | null;
+  seats: { seat: number; player_id: string; role: "civilian" | "sheriff" | "don" | "mafia" }[];
+};
+
+const GAME_COLUMNS =
+  "id, evening_id, game_no, format, status, winner, host_player_id, game_players(seat, player_id, role)";
+
+function toGame(row: Record<string, unknown>): AdminGame {
+  const { game_players, ...rest } = row as { game_players: AdminGame["seats"] | null } & Omit<AdminGame, "seats">;
+  return { ...rest, seats: [...(game_players ?? [])].sort((a, b) => a.seat - b.seat) };
+}
+
+export async function adminGamesOfEvening(db: SupabaseClient, eveningId: string): Promise<AdminGame[]> {
+  const { data, error } = await db
+    .from("games")
+    .select(GAME_COLUMNS)
+    .eq("evening_id", eveningId)
+    .order("game_no");
+  if (error) throw new Error(`Не удалось загрузить партии: ${error.message}`);
+  return data.map(toGame);
+}
+
+export async function adminGame(db: SupabaseClient, id: string): Promise<AdminGame | null> {
+  const { data, error } = await db.from("games").select(GAME_COLUMNS).eq("id", id).maybeSingle();
+  if (error) throw new Error(`Не удалось загрузить партию: ${error.message}`);
+  return data ? toGame(data) : null;
+}
+
+export async function adminAllGames(db: SupabaseClient) {
+  const { data, error } = await db
+    .from("games")
+    .select("id, game_no, format, status, winner, evenings(starts_at)")
+    .order("started_at", { ascending: false, nullsFirst: true });
+  if (error) throw new Error(`Не удалось загрузить партии: ${error.message}`);
+  return data.map((g) => {
+    const ev = Array.isArray(g.evenings) ? g.evenings[0] : g.evenings;
+    return {
+      id: g.id as string,
+      game_no: g.game_no as number,
+      format: g.format as AdminGame["format"],
+      status: g.status as AdminGame["status"],
+      winner: g.winner as AdminGame["winner"],
+      starts_at: (ev?.starts_at ?? null) as string | null,
+    };
+  });
+}

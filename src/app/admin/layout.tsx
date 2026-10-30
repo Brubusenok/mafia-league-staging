@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/admin", label: "Обзор" },
   { href: "/admin/evenings", label: "Вечера" },
+  { href: "/admin/games", label: "Партии" },
   { href: "/admin/players", label: "Игроки" },
 ];
 
@@ -41,12 +42,6 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
               {n.label}
             </Link>
           ))}
-          <span
-            title="Появится на следующих этапах"
-            className="inline-flex min-h-11 items-center px-4 text-sm text-muted/50"
-          >
-            Партии — скоро
-          </span>
         </nav>
         <form action={signOut} className="flex items-center gap-3 text-sm text-muted">
           <span className="hidden sm:inline">{user.email}</span>
