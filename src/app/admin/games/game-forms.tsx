@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { createGame, deleteGame, reopenGame, saveGame } from "@/app/admin/games/actions";
 import type { AdminGame } from "@/lib/admin-data";
 import { FORMAT_LABEL, ROLE_LABEL, WINNER_LABEL } from "@/lib/format";
+import { keepFormSubmit } from "@/lib/keep-form";
 
 const field =
   "h-11 w-full rounded-control border border-border bg-elevated px-3 text-text focus:border-accent-text focus:outline-none";
@@ -27,7 +28,7 @@ function Message({ state }: { state: { ok?: boolean; message?: string } }) {
 export function AddGameForm({ eveningId }: { eveningId: string }) {
   const [state, action, pending] = useActionState(createGame, {});
   return (
-    <form action={action}>
+    <form onSubmit={keepFormSubmit(action)}>
       <input type="hidden" name="evening_id" value={eveningId} />
       <div className="flex flex-wrap items-end gap-3">
         <label className="block text-sm text-muted">
@@ -85,7 +86,7 @@ export function GameEditor({
   );
 
   return (
-    <form action={action} className="space-y-6">
+    <form onSubmit={keepFormSubmit(action)} className="space-y-6">
       <input type="hidden" name="game_id" value={game.id} />
 
       <label className="block text-sm text-muted">

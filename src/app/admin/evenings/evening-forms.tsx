@@ -9,6 +9,7 @@ import {
 } from "@/app/admin/evenings/actions";
 import type { AdminEvening, AdminSignup } from "@/lib/admin-data";
 import { EVENING_STATUS_LABEL, SIGNUP_STATUS_LABEL, isoToViennaLocal } from "@/lib/format";
+import { keepFormSubmit } from "@/lib/keep-form";
 
 const field =
   "h-11 w-full rounded-control border border-border bg-elevated px-3 text-text placeholder:text-muted focus:border-accent-text focus:outline-none";
@@ -36,7 +37,7 @@ export function EveningForm({
   const [state, action, pending] = useActionState(saveEvening, {});
 
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepFormSubmit(action)} className="space-y-4">
       {evening && <input type="hidden" name="id" value={evening.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block text-sm text-muted">
@@ -146,7 +147,7 @@ export function SignupAddForm({
   }
   return (
     <div>
-      <form action={action} className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+      <form onSubmit={keepFormSubmit(action)} className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
         <input type="hidden" name="evening_id" value={eveningId} />
         <label className="block text-sm text-muted">
           Игрок
@@ -189,7 +190,7 @@ export function SignupRow({ eveningId, signup }: { eveningId: string; signup: Ad
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="font-medium">{signup.name}</span>
         <div className="flex flex-wrap items-center gap-2">
-          <form action={saveAction} className="flex items-center gap-2">
+          <form onSubmit={keepFormSubmit(saveAction)} className="flex items-center gap-2">
             <input type="hidden" name="evening_id" value={eveningId} />
             <input type="hidden" name="player_id" value={signup.player_id} />
             <select

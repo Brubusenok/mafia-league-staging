@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { signUp } from "@/app/login/actions";
+import { keepFormSubmit } from "@/lib/keep-form";
 
 const input =
   "h-12 w-full rounded-control border border-border bg-elevated px-4 text-text placeholder:text-muted focus:border-accent-text focus:outline-none";
@@ -10,7 +11,7 @@ export function RegisterForm() {
   const [state, action, pending] = useActionState(signUp, {});
 
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepFormSubmit(action)} className="space-y-4">
       <div>
         <label htmlFor="name" className="mb-1.5 block text-sm text-muted">
           Как вас зовут
