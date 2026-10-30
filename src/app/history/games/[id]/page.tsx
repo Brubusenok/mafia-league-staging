@@ -84,7 +84,11 @@ async function Protocol({ params }: { params: Promise<{ id: string }> }) {
                 return (
                   <tr key={s.seat} className={result === "Победа" ? "bg-accent/10" : undefined}>
                     <td className="px-4 py-3 font-display text-lg tabular-nums text-accent-text">{s.seat}</td>
-                    <td className="px-4 py-3 font-medium">{s.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/players/${s.playerId}`} className="hover:text-accent-text hover:underline">
+                        {s.name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3">{ROLE_LABEL[s.role]}</td>
                     <td className="px-4 py-3">
                       <WinnerMark winner={side} />

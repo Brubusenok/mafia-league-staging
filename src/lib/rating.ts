@@ -52,3 +52,19 @@ export function computeStats(
   }
   return stats;
 }
+
+/** Итог партии для игрока: победа, поражение или ничья. */
+export function resultFor(role: Role, winner: Winner): "win" | "loss" | "draw" {
+  if (winner === "draw") return "draw";
+  return sideOf(role) === winner ? "win" : "loss";
+}
+
+/** Рейтинг игрока после каждой партии (партии — от старых к новым), начиная с базового. */
+export function ratingHistory(results: ("win" | "loss" | "draw")[]): number[] {
+  const points = [BASE_RATING];
+  for (const r of results) {
+    const delta = r === "win" ? POINTS_PER_RESULT : r === "loss" ? -POINTS_PER_RESULT : 0;
+    points.push(points[points.length - 1] + delta);
+  }
+  return points;
+}

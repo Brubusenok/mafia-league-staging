@@ -1,7 +1,16 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { DEMO_EVENING, DEMO_RECENT_GAMES, DEMO_TOP_PLAYERS, DEMO_LEAGUE_STATS } from "@/lib/demo";
 import { FORMAT_LABEL, eveningParts, shortDate } from "@/lib/format";
-import { computeStats, type FinishedGame, type PlayerStats, type Role, type Winner } from "@/lib/rating";
+import {
+  computeStats,
+  ratingHistory,
+  resultFor,
+  sideOf,
+  type FinishedGame,
+  type PlayerStats,
+  type Role,
+  type Winner,
+} from "@/lib/rating";
 import { getPublicClient } from "@/lib/supabase";
 
 /** Показывать ли пометку «Демонстрационные данные». Выключите, когда внесёте настоящих игроков. */
@@ -55,7 +64,7 @@ async function loadFinishedGames() {
   const rows = check(
     await db
       .from("games")
-      .select("id, winner, format, finished_at, evenings(starts_at), game_players(player_id, role)")
+      .select("id, game_no, evening_id, winner, format, finished_at, evenings(starts_at), game_players(player_id, role)")
       .eq("status", "finished")
       .order("finished_at", { ascending: false }),
     "партии",
@@ -64,6 +73,9 @@ async function loadFinishedGames() {
     const ev = Array.isArray(g.evenings) ? g.evenings[0] : g.evenings;
     return {
       id: g.id as string,
+      no: g.game_no as number,
+      eveningId: g.evening_id as string,
+      eveningStartsAt: (ev?.starts_at ?? g.finished_at) as string,
       format: g.format as keyof typeof FORMAT_LABEL,
       date: (g.finished_at ?? ev?.starts_at) as string,
       game: {
@@ -302,7 +314,7 @@ export type GameProtocol = {
   eveningId: string;
   eveningStartsAt: string;
   hostName: string | null;
-  seats: { seat: number; name: string; role: Role }[];
+  seats: { seat: number; playerId: string; name: string; role: Role }[];
 };
 
 /** Протокол одной завершённой партии. null — партии нет или она ещё не завершена. */
@@ -319,7 +331,7 @@ export async function getGameProtocol(id: string): Promise<GameProtocol | null> 
     .select(
       "id, game_no, format, status, winner, finished_at, evening_id, evenings(starts_at), " +
         "host:players!games_host_player_id_fkey(display_name), " +
-        "game_players(seat, role, player:players(display_name))",
+        "game_players(seat, role, player_id, player:players(display_name))",
     )
     .eq("id", id)
     .maybeSingle();
@@ -338,12 +350,101 @@ export async function getGameProtocol(id: string): Promise<GameProtocol | null> 
     eveningId: g.evening_id,
     eveningStartsAt: one<{ starts_at: string }>(g.evenings)?.starts_at ?? g.finished_at,
     hostName: one<{ display_name: string }>(g.host)?.display_name ?? null,
-    seats: (g.game_players as { seat: number; role: Role; player: unknown }[])
+    seats: (g.game_players as { seat: number; role: Role; player_id: string; player: unknown }[])
       .map((p) => ({
         seat: p.seat,
+        playerId: p.player_id,
         role: p.role,
         name: one(p.player as { display_name: string } | null)?.display_name ?? "—",
       }))
       .sort((a, b) => a.seat - b.seat),
+  };
+}
+
+// ------------------------------------------------------------ профиль игрока
+
+export type SideStats = { games: number; wins: number };
+
+export type PlayerProfile = Player & {
+  joinedOn: string | null;
+  rating: number;
+  ratingPoints: number[]; // рейтинг до первой партии и после каждой следующей
+  games: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  evenings: number;
+  sides: Record<"red" | "black", SideStats>;
+  roles: Record<Role, SideStats>;
+  history: {
+    gameId: string;
+    no: number;
+    startsAt: string;
+    format: keyof typeof FORMAT_LABEL;
+    role: Role;
+    result: "win" | "loss" | "draw";
+  }[]; // новые сверху
+};
+
+/** Профиль игрока со статистикой по завершённым партиям. null — такого игрока нет. */
+export async function getPlayerProfile(id: string): Promise<PlayerProfile | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("club");
+
+  const db = getPublicClient();
+  if (!db) return null;
+
+  const [playerRes, allGames] = await Promise.all([
+    db.from("players").select("id, display_name, status, joined_on").eq("id", id).maybeSingle(),
+    loadFinishedGames(),
+  ]);
+  if (playerRes.error) throw new Error(`Не удалось загрузить игрока: ${playerRes.error.message}`);
+  const p = playerRes.data;
+  if (!p) return null;
+
+  const played = allGames
+    .flatMap((g) => {
+      const seat = g.game.players.find((x) => x.player_id === id);
+      return seat ? [{ ...g, role: seat.role, result: resultFor(seat.role, g.game.winner) }] : [];
+    })
+    .sort((a, b) => a.eveningStartsAt.localeCompare(b.eveningStartsAt) || a.no - b.no);
+
+  const empty = () => ({ games: 0, wins: 0 });
+  const sides = { red: empty(), black: empty() };
+  const roles = { civilian: empty(), sheriff: empty(), don: empty(), mafia: empty() };
+  for (const g of played) {
+    const win = g.result === "win" ? 1 : 0;
+    sides[sideOf(g.role)].games += 1;
+    sides[sideOf(g.role)].wins += win;
+    roles[g.role].games += 1;
+    roles[g.role].wins += win;
+  }
+  const ratingPoints = ratingHistory(played.map((g) => g.result));
+
+  return {
+    id: p.id,
+    name: p.display_name,
+    status: p.status,
+    joinedOn: p.joined_on ?? null,
+    rating: ratingPoints[ratingPoints.length - 1],
+    ratingPoints,
+    games: played.length,
+    wins: played.filter((g) => g.result === "win").length,
+    losses: played.filter((g) => g.result === "loss").length,
+    draws: played.filter((g) => g.result === "draw").length,
+    evenings: new Set(played.map((g) => g.eveningId)).size,
+    sides,
+    roles,
+    history: played
+      .map((g) => ({
+        gameId: g.id,
+        no: g.no,
+        startsAt: g.eveningStartsAt,
+        format: g.format,
+        role: g.role,
+        result: g.result,
+      }))
+      .reverse(),
   };
 }

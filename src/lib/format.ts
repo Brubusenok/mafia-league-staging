@@ -159,3 +159,21 @@ export const WINNER_SHORT = {
   black: "Чёрные",
   draw: "Ничья",
 } as const;
+
+/** «сентября 2026» — для «В клубе с …» (в базе это день без времени). */
+export function sinceMonth(day: string) {
+  const parts = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).formatToParts(new Date(`${day}T00:00:00Z`));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("month")} ${get("year")}`;
+}
+
+export const RESULT_LABEL = {
+  win: "Победа",
+  loss: "Поражение",
+  draw: "Ничья",
+} as const;
