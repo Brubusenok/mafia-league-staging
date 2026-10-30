@@ -22,14 +22,19 @@ export async function AuthButton({ variant }: { variant: "bar" | "menu" }) {
 
   let signedIn = false;
   let isAdmin = false;
+  let playerId: string | null = null;
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     try {
       const supabase = await createServerSupabase();
       const { data } = await supabase.auth.getClaims();
       signedIn = !!data?.claims;
       if (signedIn) {
-        const { data: admin } = await supabase.rpc("is_admin");
+        const [{ data: admin }, { data: player }] = await Promise.all([
+          supabase.rpc("is_admin"),
+          supabase.from("players").select("id").eq("user_id", data!.claims.sub).maybeSingle(),
+        ]);
         isAdmin = admin === true;
+        playerId = player?.id ?? null;
       }
     } catch {
       signedIn = false;
@@ -41,6 +46,12 @@ export async function AuthButton({ variant }: { variant: "bar" | "menu" }) {
   }
   return (
     <div className={wrap}>
+      {/* Пока профиль — это публичная страница игрока. */}
+      {playerId && (
+        <Link href={`/players/${playerId}`} className={s.ghost}>
+          Профиль
+        </Link>
+      )}
       {isAdmin && (
         <Link href="/admin" className={s.link}>
           Админка
