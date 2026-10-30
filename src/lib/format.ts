@@ -41,3 +41,70 @@ export const STATUS_LABEL = {
   club_member: "Игрок клуба",
   newbie: "Новичок",
 } as const;
+
+/** Часть даты/времени в поясе Граца: год, месяц, день, час, минута (числами). */
+function viennaParts(d: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(d);
+  const n = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return { y: n("year"), mo: n("month"), d: n("day"), h: n("hour"), mi: n("minute") };
+}
+
+/** Для поля <input type="datetime-local">: «2026-11-14T19:00» по времени Граца. */
+export function isoToViennaLocal(iso: string) {
+  const p = viennaParts(new Date(iso));
+  const z = (v: number) => String(v).padStart(2, "0");
+  return `${p.y}-${z(p.mo)}-${z(p.d)}T${z(p.h)}:${z(p.mi)}`;
+}
+
+/**
+ * Обратное преобразование: «2026-11-14T19:00» (местное время Граца) → ISO в UTC.
+ * Возвращает null, если строка неверная или такого времени не существует.
+ */
+export function viennaLocalToIso(local: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  const wanted = Date.UTC(y, mo - 1, d, h, mi);
+  let guess = wanted;
+  for (let i = 0; i < 3; i++) {
+    const p = viennaParts(new Date(guess));
+    const shown = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi);
+    guess += wanted - shown;
+  }
+  const back = viennaParts(new Date(guess));
+  if (back.y !== y || back.mo !== mo || back.d !== d || back.h !== h || back.mi !== mi) return null;
+  return new Date(guess).toISOString();
+}
+
+export const EVENING_STATUS_LABEL = {
+  planned: "Запланирован",
+  finished: "Проведён",
+  cancelled: "Отменён",
+} as const;
+
+export const SIGNUP_STATUS_LABEL = {
+  going: "Придёт",
+  late: "Опоздает",
+  maybe: "Возможно",
+  not_going: "Не придёт",
+} as const;
+
+/** «14 ноября 2026, 19:00» — для админки. */
+export function fullDateTime(iso: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: TZ,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
