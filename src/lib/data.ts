@@ -1,4 +1,4 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { DEMO_EVENING, DEMO_RECENT_GAMES, DEMO_TOP_PLAYERS, DEMO_LEAGUE_STATS } from "@/lib/demo";
 import { FORMAT_LABEL, eveningParts, shortDate } from "@/lib/format";
 import { computeStats, type FinishedGame, type PlayerStats, type Role, type Winner } from "@/lib/rating";
@@ -77,6 +77,7 @@ async function loadFinishedGames() {
 export async function getRating(): Promise<RatedPlayer[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("club");
 
   const [players, games] = await Promise.all([loadPlayers(), loadFinishedGames()]);
   const stats = computeStats(players.map((p) => p.id), games.map((g) => g.game));
@@ -88,6 +89,7 @@ export async function getRating(): Promise<RatedPlayer[]> {
 export async function getNextEvening(): Promise<NextEvening | null> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("club");
 
   const db = getPublicClient();
   if (!db) {
@@ -127,6 +129,7 @@ export async function getNextEvening(): Promise<NextEvening | null> {
 export async function getRecentGames(limit = 3): Promise<RecentGame[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("club");
 
   if (!getPublicClient()) {
     return DEMO_RECENT_GAMES.map((g, i) => ({ id: String(i), ...g }));
@@ -143,6 +146,7 @@ export async function getRecentGames(limit = 3): Promise<RecentGame[]> {
 export async function getLeagueStats(): Promise<{ value: string; label: string }[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("club");
 
   const db = getPublicClient();
   if (!db) return DEMO_LEAGUE_STATS;
@@ -162,6 +166,7 @@ export async function getLeagueStats(): Promise<{ value: string; label: string }
 export async function getTopPlayers(limit = 3): Promise<{ place: number; name: string; rating: number }[]> {
   "use cache";
   cacheLife("minutes");
+  cacheTag("club");
 
   if (!getPublicClient()) return DEMO_TOP_PLAYERS;
   const rated = await getRating();
