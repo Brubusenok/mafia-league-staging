@@ -108,3 +108,21 @@ export function fullDateTime(iso: string) {
     minute: "2-digit",
   }).format(new Date(iso));
 }
+
+export const ROLE_LABEL = {
+  civilian: "Мирный",
+  sheriff: "Шериф",
+  don: "Дон",
+  mafia: "Мафия",
+} as const;
+
+export const WINNER_LABEL = {
+  red: "Красные (мирные)",
+  black: "Чёрные (мафия)",
+  draw: "Ничья",
+} as const;
+
+export const GAME_STATUS_LABEL = {
+  in_progress: "Черновик",
+  finished: "Завершена",
+} as const;

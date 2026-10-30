@@ -7,9 +7,10 @@ import {
   SignupAddForm,
   SignupRow,
 } from "@/app/admin/evenings/evening-forms";
-import { adminEvening, adminPlayers, adminSignups } from "@/lib/admin-data";
+import { AddGameForm } from "@/app/admin/games/game-forms";
+import { adminEvening, adminGamesOfEvening, adminPlayers, adminSignups } from "@/lib/admin-data";
 import { requireAdmin } from "@/lib/auth";
-import { fullDateTime } from "@/lib/format";
+import { FORMAT_LABEL, GAME_STATUS_LABEL, WINNER_LABEL, fullDateTime } from "@/lib/format";
 import { isUuid } from "@/lib/validate";
 
 export const metadata: Metadata = { title: "Вечер · Админка" };
@@ -19,10 +20,11 @@ export default async function AdminEveningPage(props: PageProps<"/admin/evenings
   const { id } = await props.params;
   if (!isUuid(id)) notFound();
 
-  const [evening, players, signups] = await Promise.all([
+  const [evening, players, signups, games] = await Promise.all([
     adminEvening(supabase, id),
     adminPlayers(supabase),
     adminSignups(supabase, id),
+    adminGamesOfEvening(supabase, id),
   ]);
   if (!evening) notFound();
 
@@ -61,6 +63,34 @@ export default async function AdminEveningPage(props: PageProps<"/admin/evenings
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="rounded-card border border-border bg-surface p-5">
+        <h2 className="mb-1 font-display text-xl font-bold">Партии вечера</h2>
+        <p className="mb-4 text-sm text-muted">
+          Здесь вносятся результаты: кто на каком месте сидел, роли и победитель.
+        </p>
+        {games.length > 0 && (
+          <ul className="mb-5 space-y-2">
+            {games.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/admin/games/${g.id}`}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-border p-3 transition-colors hover:border-accent-text"
+                >
+                  <span className="font-medium">
+                    Партия №{g.game_no} · {FORMAT_LABEL[g.format]}
+                  </span>
+                  <span className="flex items-center gap-3 text-sm text-muted">
+                    {g.winner && <span>{WINNER_LABEL[g.winner]}</span>}
+                    <span className="rounded-full bg-elevated px-3 py-1">{GAME_STATUS_LABEL[g.status]}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        <AddGameForm eveningId={evening.id} />
       </section>
 
       <div className="flex justify-end">

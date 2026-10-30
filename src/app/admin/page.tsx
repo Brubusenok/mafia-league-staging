@@ -12,7 +12,7 @@ export default async function AdminPage() {
   const stats = [
     { label: "Игроков", value: c.players, href: "/admin/players" },
     { label: "Вечеров", value: c.evenings, href: "/admin/evenings" },
-    { label: "Партий", value: c.games },
+    { label: "Партий", value: c.games, href: "/admin/games" },
     { label: "Идут сейчас", value: c.playing },
   ];
 
@@ -35,9 +35,6 @@ export default async function AdminPage() {
           </li>
         ))}
       </ul>
-      <p className="text-sm text-muted">
-        Ввод результатов партий появится на следующем этапе.
-      </p>
     </div>
   );
 }
