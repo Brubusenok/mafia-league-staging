@@ -1,18 +1,43 @@
 import type { Metadata } from "next";
-import { PageStub } from "@/components/page-stub";
+import Link from "next/link";
+import { adminCounts } from "@/lib/admin-data";
+import { requireAdmin } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Панель администратора" };
+export const metadata: Metadata = { title: "Обзор · Админка" };
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const { supabase } = await requireAdmin();
+  const c = await adminCounts(supabase);
+
+  const stats = [
+    { label: "Игроков", value: c.players, href: "/admin/players" },
+    { label: "Вечеров", value: c.evenings },
+    { label: "Партий", value: c.games },
+    { label: "Идут сейчас", value: c.playing },
+  ];
+
   return (
-    <PageStub
-      title="Панель администратора"
-      subtitle="Управление клубом."
-      planned={[
-        "Игровые вечера и заявки на участие",
-        "Игроки и их статусы",
-        "Ввод результатов партий",
-      ]}
-    />
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-3xl font-bold">Обзор клуба</h1>
+        <p className="mt-2 text-muted">Вы вошли как администратор.</p>
+      </div>
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => (
+          <li key={s.label} className="rounded-card border border-border bg-surface p-5">
+            <p className="font-display text-4xl leading-none font-bold">{s.value}</p>
+            <p className="mt-2 text-sm text-muted">{s.label}</p>
+            {s.href && (
+              <Link href={s.href} className="mt-3 inline-flex min-h-11 items-center text-sm text-accent-text hover:underline">
+                Открыть →
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="text-sm text-muted">
+        Управление вечерами и ввод результатов партий появятся на следующих этапах.
+      </p>
+    </div>
   );
 }
