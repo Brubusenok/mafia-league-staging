@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { linkAccount } from "@/app/admin/players/actions";
+import { keepFormSubmit } from "@/lib/keep-form";
 
 export function LinkAccountForm({
   historicalId,
@@ -16,11 +17,12 @@ export function LinkAccountForm({
   return (
     <div className="mt-3 border-t border-border pt-3">
       <form
-        action={action}
         onSubmit={(e) => {
           if (!confirm("Привязать выбранный аккаунт к этому игроку? Профиль-дубль будет удалён.")) {
             e.preventDefault();
+            return;
           }
+          keepFormSubmit(action)(e);
         }}
         className="flex flex-wrap items-center gap-2"
       >

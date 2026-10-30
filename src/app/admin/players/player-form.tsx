@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 import { deletePlayer, savePlayer } from "@/app/admin/players/actions";
 import type { AdminPlayer } from "@/lib/admin-data";
+import { keepFormSubmit } from "@/lib/keep-form";
 
 const field =
   "h-11 w-full rounded-control border border-border bg-elevated px-3 text-text placeholder:text-muted focus:border-accent-text focus:outline-none";
@@ -18,7 +19,7 @@ export function PlayerForm({ player }: { player?: AdminPlayer }) {
 
   return (
     <div>
-      <form ref={formRef} action={action} className="grid gap-3 sm:grid-cols-[1fr_1fr_10rem_auto] sm:items-end">
+      <form ref={formRef} onSubmit={keepFormSubmit(action)} className="grid gap-3 sm:grid-cols-[1fr_1fr_10rem_auto] sm:items-end">
         {player && <input type="hidden" name="id" value={player.id} />}
         <label className="block text-sm text-muted">
           Имя
