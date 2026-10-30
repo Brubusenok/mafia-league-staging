@@ -1,0 +1,80 @@
+import Link from "next/link";
+import { signOut } from "@/app/login/actions";
+import { createServerSupabase } from "@/lib/supabase/server";
+
+const bar = {
+  link: "inline-flex h-11 items-center rounded-control px-4 text-sm text-muted transition-colors hover:text-text",
+  primary:
+    "inline-flex h-11 items-center rounded-control bg-accent px-5 text-sm font-medium transition-colors hover:bg-accent-hover",
+  ghost:
+    "inline-flex h-11 items-center rounded-control border border-border px-4 text-sm transition-colors hover:border-accent-text",
+};
+const menu = {
+  link: "flex min-h-12 items-center border-l-2 border-transparent px-4 text-base text-muted hover:text-text",
+  primary: "flex h-12 items-center justify-center rounded-control bg-accent font-medium hover:bg-accent-hover",
+  ghost: "flex h-12 w-full items-center justify-center rounded-control border border-border hover:border-accent-text",
+};
+
+/** Кнопки входа/выхода. Читает сессию, поэтому используется внутри Suspense. */
+export async function AuthButton({ variant }: { variant: "bar" | "menu" }) {
+  const s = variant === "bar" ? bar : menu;
+  const wrap = variant === "bar" ? "hidden items-center gap-2 sm:flex" : "flex flex-col gap-2 py-3";
+
+  let signedIn = false;
+  let isAdmin = false;
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    try {
+      const supabase = await createServerSupabase();
+      const { data } = await supabase.auth.getClaims();
+      signedIn = !!data?.claims;
+      if (signedIn) {
+        const { data: admin } = await supabase.rpc("is_admin");
+        isAdmin = admin === true;
+      }
+    } catch {
+      signedIn = false;
+    }
+  }
+
+  if (!signedIn) {
+    return <AuthLinks variant={variant} wrap={wrap} s={s} />;
+  }
+  return (
+    <div className={wrap}>
+      {isAdmin && (
+        <Link href="/admin" className={s.link}>
+          Админка
+        </Link>
+      )}
+      <form action={signOut} className={variant === "menu" ? "w-full" : undefined}>
+        <button type="submit" className={s.ghost}>
+          Выйти
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/** То, что видит гость (и пока грузится проверка входа). */
+export function AuthLinks({
+  variant,
+  wrap,
+  s,
+}: {
+  variant: "bar" | "menu";
+  wrap?: string;
+  s?: typeof bar;
+}) {
+  const st = s ?? (variant === "bar" ? bar : menu);
+  const w = wrap ?? (variant === "bar" ? "hidden items-center gap-2 sm:flex" : "flex flex-col gap-2 py-3");
+  return (
+    <div className={w}>
+      <Link href="/register" className={st.link}>
+        Регистрация
+      </Link>
+      <Link href="/login" className={st.primary}>
+        Войти
+      </Link>
+    </div>
+  );
+}

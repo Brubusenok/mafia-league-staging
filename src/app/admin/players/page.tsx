@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkAccountForm } from "@/app/admin/players/link-account";
 import { DeletePlayerButton, PlayerForm } from "@/app/admin/players/player-form";
 import { adminPlayers } from "@/lib/admin-data";
 import { requireAdmin } from "@/lib/auth";
@@ -8,12 +9,13 @@ export const metadata: Metadata = { title: "Игроки · Админка" };
 export default async function AdminPlayersPage() {
   const { supabase } = await requireAdmin();
   const players = await adminPlayers(supabase);
+  const accounts = players.filter((p) => p.user_id).map((p) => ({ id: p.id, name: p.display_name }));
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="font-display text-3xl font-bold">Игроки</h1>
-        <p className="mt-2 text-muted">Всего: {players.length}. Изменения сразу появляются на сайте.</p>
+        <p className="mt-2 text-muted">Всего: {players.length}. Изменения сразу появляются на сайте. Игроки, которые зарегистрировались сами, помечены «Есть аккаунт» — их можно привязать к старому профилю с историей игр.</p>
       </div>
 
       <section className="rounded-card border border-border bg-surface p-5">
@@ -31,6 +33,7 @@ export default async function AdminPlayersPage() {
                 <span>{p.user_id ? "Есть аккаунт" : "Без аккаунта"}</span>
                 <DeletePlayerButton player={p} />
               </div>
+              {!p.user_id && <LinkAccountForm historicalId={p.id} accounts={accounts} />}
             </li>
           ))}
         </ul>
