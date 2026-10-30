@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import type { FormState } from "@/lib/form-state";
+import { ROLE_LABEL } from "@/lib/format";
 import { isUuid } from "@/lib/validate";
 
 const ROLES = ["civilian", "sheriff", "don", "mafia"] as const;
@@ -85,7 +86,14 @@ export async function saveGame(_prev: FormState, formData: FormData): Promise<Fo
   });
   if (error) {
     // P0001 — понятные сообщения из базы (состав, ведущий, победитель).
-    return { message: error.code === "P0001" ? error.message : "Не удалось сохранить. Попробуйте ещё раз." };
+    return {
+      message: error.code === "P0001" ? error.message : "Не удалось сохранить. Попробуйте ещё раз.",
+      // Что именно получил сервер: помогает сверить с тем, что выбрано в форме.
+      details:
+        seats.length > 0
+          ? seats.map((s) => `${s.seat} — ${ROLE_LABEL[s.role as keyof typeof ROLE_LABEL]}`).join(" · ")
+          : "Ни одного места не заполнено",
+    };
   }
 
   updateTag("club");

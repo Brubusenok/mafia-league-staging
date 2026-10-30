@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, type FormEvent } from "react";
 import { createGame, deleteGame, reopenGame, saveGame } from "@/app/admin/games/actions";
 import type { AdminGame } from "@/lib/admin-data";
 import { FORMAT_LABEL, ROLE_LABEL, WINNER_LABEL } from "@/lib/format";
+import { blocker, expectedFor, summarize, type RoleKey } from "@/lib/game-composition";
 import { keepFormSubmit } from "@/lib/keep-form";
 
 const field =
@@ -13,15 +14,13 @@ const button =
 
 type PlayerOption = { id: string; name: string };
 
-function Message({ state }: { state: { ok?: boolean; message?: string } }) {
+function Message({ state }: { state: { ok?: boolean; message?: string; details?: string } }) {
   if (!state.message) return null;
   return (
-    <p
-      role={state.ok ? "status" : "alert"}
-      className={`mt-3 text-sm ${state.ok ? "text-success" : "text-error"}`}
-    >
-      {state.message}
-    </p>
+    <div role={state.ok ? "status" : "alert"} className="mt-3 text-sm">
+      <p className={state.ok ? "text-success" : "text-error"}>{state.message}</p>
+      {state.details && <p className="mt-1 text-muted">Сервер получил роли по местам: {state.details}</p>}
+    </div>
   );
 }
 
@@ -60,6 +59,24 @@ export function GameEditor({
   const total = game.format === "classic10" ? 10 : 9;
   const bySeat = new Map(game.seats.map((s) => [s.seat, s]));
   const signed = new Set(signedIds);
+  const [comp, setComp] = useState(() =>
+    summarize((name) => {
+      const m = /^seat_(\d+)_(player|role)$/.exec(name);
+      if (m) {
+        const cur = bySeat.get(Number(m[1]));
+        return m[2] === "player" ? (cur?.player_id ?? "") : (cur?.role ?? "civilian");
+      }
+      if (name === "host_player_id") return game.host_player_id ?? "";
+      if (name === "winner") return game.winner ?? "";
+      return "";
+    }, total),
+  );
+  const want = expectedFor(total);
+  const problem = blocker(comp, total);
+  const onChange = (e: FormEvent<HTMLFormElement>) => {
+    const fd = new FormData(e.currentTarget);
+    setComp(summarize((name) => String(fd.get(name) ?? ""), total));
+  };
   const signedPlayers = players.filter((p) => signed.has(p.id));
   const others = players.filter((p) => !signed.has(p.id));
 
@@ -86,7 +103,7 @@ export function GameEditor({
   );
 
   return (
-    <form onSubmit={keepFormSubmit(action)} className="space-y-6">
+    <form onSubmit={keepFormSubmit(action)} onChange={onChange} className="space-y-6">
       <input type="hidden" name="game_id" value={game.id} />
 
       <label className="block text-sm text-muted">
@@ -105,8 +122,8 @@ export function GameEditor({
         <h3 className="mb-2 font-medium">Места за столом</h3>
         <p className="mb-3 text-sm text-muted">
           {game.format === "classic10"
-            ? "Классика 10: 6 мирных, шериф, дон и 2 мафии."
-            : "Short9: 5 мирных, шериф, дон и 2 мафии."}{" "}
+            ? "Классика 10: 6 мирных, 1 шериф, 1 дон, 2 мафии."
+            : "Short9: 5 мирных, 1 шериф, 1 дон, 2 мафии."}{" "}
           Для черновика можно заполнить не все места.
         </p>
         <ul className="grid gap-3 sm:grid-cols-2">
@@ -153,6 +170,28 @@ export function GameEditor({
         </select>
       </label>
 
+      <div aria-live="polite" className="rounded-control border border-border bg-elevated p-3">
+        <ul className="flex flex-wrap gap-2 text-sm">
+          {(Object.keys(want) as RoleKey[]).map((role) => {
+            const have = comp.counts[role];
+            const tone =
+              have === want[role]
+                ? "border-success/60 text-success"
+                : have > want[role]
+                  ? "border-error/60 text-error"
+                  : "border-border text-muted";
+            return (
+              <li key={role} className={`rounded-full border px-3 py-1 ${tone}`}>
+                {ROLE_LABEL[role]}: {have} из {want[role]}
+              </li>
+            );
+          })}
+        </ul>
+        <p className={`mt-2 text-sm ${problem ? "text-muted" : "text-success"}`}>
+          {problem ? `Чтобы завершить: ${problem.toLowerCase()}.` : "Всё готово, можно завершать партию."}
+        </p>
+      </div>
+
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
@@ -163,7 +202,13 @@ export function GameEditor({
         >
           Сохранить черновик
         </button>
-        <button type="submit" name="intent" value="finish" disabled={pending} className={button}>
+        <button
+          type="submit"
+          name="intent"
+          value="finish"
+          disabled={pending || problem !== null}
+          className={button}
+        >
           Завершить партию
         </button>
       </div>
