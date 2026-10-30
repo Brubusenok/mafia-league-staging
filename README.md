@@ -1,2 +1,41 @@
-# mafia-league-staging
-Mafia League vNext — private development collaboration; Staging #33 source import pending
+# Mafia League
+
+Сайт клуба спортивной Мафии в Граце (Австрия). Пока только на русском.
+
+Стек: Next.js + TypeScript + Tailwind CSS. Дальше: Supabase (база и вход), Vercel (хостинг).
+
+## Запуск на своём компьютере
+
+Нужен Node.js 20 или новее.
+
+```bash
+npm install
+npm run dev
+```
+
+Сайт откроется на http://localhost:3000.
+
+## Проверки
+
+```bash
+npm run lint
+npm run build
+```
+
+## Где что лежит
+
+- `src/app/` — страницы (каждая папка — один адрес на сайте)
+- `src/components/` — шапка, подвал и другие общие блоки
+- `src/app/globals.css` — цвета сайта (чёрно-красная тема)
+- `src/lib/nav.ts` — пункты меню
+
+## Статус
+
+Готов фундамент: шапка с меню, подвал, цвета, шрифты, страницы-заглушки.
+Данные на страницах пока демонстрационные.
+
+## Заметка для разработки
+
+В `next.config.ts` включены Cache Components. Из-за этого в компонентах нельзя
+просто вызывать `new Date()` или читать данные без `Suspense` / `"use cache"` —
+сборка упадёт с понятной ошибкой.

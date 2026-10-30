@@ -1,0 +1,18 @@
+import type { Metadata } from "next";
+import { PageStub } from "@/components/page-stub";
+
+export const metadata: Metadata = { title: "Панель администратора" };
+
+export default function AdminPage() {
+  return (
+    <PageStub
+      title="Панель администратора"
+      subtitle="Управление клубом."
+      planned={[
+        "Игровые вечера и заявки на участие",
+        "Игроки и их статусы",
+        "Ввод результатов партий",
+      ]}
+    />
+  );
+}
