@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { Logo } from "@/components/logo";
 import "./globals.css";
 
 const ui = Inter({
@@ -31,7 +33,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ru" className={`${ui.variable} ${display.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <Header />
+        {/* Header читает адрес страницы, на динамических адресах это нужно делать в Suspense. */}
+        <Suspense
+          fallback={
+            <header className="h-16 border-b border-border bg-canvas">
+              <div className="mx-auto flex h-full max-w-7xl items-center px-4 sm:px-6">
+                <Logo />
+              </div>
+            </header>
+          }
+        >
+          <Header />
+        </Suspense>
         <main className="flex-1">{children}</main>
         <Footer />
       </body>
