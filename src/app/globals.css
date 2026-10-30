@@ -74,3 +74,19 @@ body {
   outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
+
+/* Плавное появление блока: короткий сдвиг снизу и проявление. */
+@theme {
+  --animate-reveal: reveal 280ms ease-out;
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

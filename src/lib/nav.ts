@@ -4,7 +4,7 @@ export const NAV_ITEMS = [
   { href: "/players", label: "Игроки" },
   { href: "/rating", label: "Рейтинг" },
   { href: "/history", label: "История" },
-  { href: "/learn", label: "Учиться" },
+  { href: "/learn", label: "Обучение" },
 ] as const;
 
 export function isActive(pathname: string, href: string) {

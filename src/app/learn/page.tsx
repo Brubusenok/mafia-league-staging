@@ -1,27 +1,9 @@
 import type { Metadata } from "next";
 import { ButtonLink, Card, PageHero } from "@/components/ui";
 import { TableDiagram } from "@/components/table-diagram";
+import { NewbiePath } from "@/app/learn/newbie-path";
 
-export const metadata: Metadata = { title: "Учиться" };
-
-const STEPS = [
-  {
-    title: "Что такое спортивная Мафия?",
-    text: "Коротко о формате, клубе и чем он отличается.",
-  },
-  {
-    title: "Роли и правила",
-    text: "Кто есть кто и как мы играем (без сложностей).",
-  },
-  {
-    title: "Как проходит партия",
-    text: "Этапы, тайминги и что происходит за столом.",
-  },
-  {
-    title: "Голосование и первый игровой вечер",
-    text: "Как принимать решения и чего ожидать на встрече.",
-  },
-];
+export const metadata: Metadata = { title: "Обучение" };
 
 const MATERIALS = [
   { title: "Основы", text: "Правила, роли, формат, частые вопросы." },
@@ -46,7 +28,7 @@ export default function LearnPage() {
             Мафии и уверенно прийти на свой первый игровой вечер.
           </p>
           <p className="mt-5 text-sm text-accent-text">
-            Уроки появятся здесь совсем скоро.
+            Начните с «Пути новичка» ниже.
           </p>
         </Card>
 
@@ -55,22 +37,9 @@ export default function LearnPage() {
             Путь новичка
           </h2>
           <p className="mt-1 text-muted">
-            Четыре коротких урока — и вы готовы к первой игре.
+            Четыре коротких урока — и вы готовы к первой игре. Нажмите на шаг, чтобы открыть его.
           </p>
-          <ol className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s, i) => (
-              <li
-                key={s.title}
-                className="rounded-card border border-border bg-surface p-5"
-              >
-                <span className="flex size-8 items-center justify-center rounded-full border border-accent-text text-sm text-accent-text">
-                  {i + 1}
-                </span>
-                <h3 className="mt-3 font-display text-lg font-bold">{s.title}</h3>
-                <p className="mt-2 text-sm text-muted">{s.text}</p>
-              </li>
-            ))}
-          </ol>
+          <NewbiePath />
         </section>
 
         <Card>
