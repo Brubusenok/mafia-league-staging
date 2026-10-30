@@ -177,3 +177,173 @@ export async function getTopPlayers(limit = 3): Promise<{ place: number; name: s
     .slice(0, limit)
     .map((p, i) => ({ place: i + 1, name: p.name, rating: p.rating }));
 }
+
+// ------------------------------------------------------------------ история
+
+export type HistoryGame = {
+  id: string;
+  no: number;
+  format: keyof typeof FORMAT_LABEL;
+  winner: Winner;
+  players: number;
+};
+
+export type HistoryEvening = {
+  id: string;
+  number: number; // порядковый номер вечера в клубе, с 1
+  startsAt: string;
+  place: string;
+  seasonId: string | null;
+  participants: number; // разных игроков за столом за вечер
+  games: HistoryGame[];
+};
+
+export type SeasonSummary = {
+  id: string;
+  name: string;
+  startsOn: string;
+  endsOn: string | null;
+  evenings: number;
+  games: number;
+  players: number;
+  redWins: number;
+  blackWins: number;
+  draws: number;
+};
+
+export type HistoryTotals = Omit<SeasonSummary, "id" | "name" | "startsOn" | "endsOn">;
+
+function summarize(evenings: HistoryEvening[], playerIds: Map<string, Set<string>>): HistoryTotals {
+  const players = new Set<string>();
+  const t: HistoryTotals = { evenings: evenings.length, games: 0, players: 0, redWins: 0, blackWins: 0, draws: 0 };
+  for (const e of evenings) {
+    for (const id of playerIds.get(e.id) ?? []) players.add(id);
+    for (const g of e.games) {
+      t.games += 1;
+      if (g.winner === "red") t.redWins += 1;
+      else if (g.winner === "black") t.blackWins += 1;
+      else t.draws += 1;
+    }
+  }
+  t.players = players.size;
+  return t;
+}
+
+/** Проведённые вечера с завершёнными партиями (новые сверху), сезоны и общая сводка. */
+export async function getHistory(): Promise<{
+  evenings: HistoryEvening[];
+  seasons: SeasonSummary[];
+  totals: HistoryTotals;
+}> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("club");
+
+  const empty = { evenings: [], seasons: [], totals: summarize([], new Map()) };
+  const db = getPublicClient();
+  if (!db) return empty;
+
+  const [eveningRows, seasonRows] = await Promise.all([
+    db
+      .from("evenings")
+      .select("id, starts_at, place, season_id, games(id, game_no, format, status, winner, game_players(player_id))")
+      .eq("status", "finished")
+      .order("starts_at", { ascending: true }),
+    db.from("seasons").select("id, name, starts_on, ends_on").order("starts_on", { ascending: false }),
+  ]);
+
+  const playerIds = new Map<string, Set<string>>();
+  const evenings: HistoryEvening[] = check(eveningRows, "историю вечеров").map((e, i) => {
+    const ids = new Set<string>();
+    const games = (e.games as {
+      id: string;
+      game_no: number;
+      format: HistoryGame["format"];
+      status: string;
+      winner: Winner | null;
+      game_players: { player_id: string }[];
+    }[])
+      .filter((g) => g.status === "finished" && g.winner)
+      .sort((a, b) => a.game_no - b.game_no)
+      .map((g) => {
+        for (const p of g.game_players) ids.add(p.player_id);
+        return { id: g.id, no: g.game_no, format: g.format, winner: g.winner!, players: g.game_players.length };
+      });
+    playerIds.set(e.id, ids);
+    return {
+      id: e.id as string,
+      number: i + 1,
+      startsAt: e.starts_at as string,
+      place: e.place as string,
+      seasonId: (e.season_id as string | null) ?? null,
+      participants: ids.size,
+      games,
+    };
+  });
+  evenings.reverse();
+
+  const seasons: SeasonSummary[] = check(seasonRows, "сезоны").map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+    startsOn: s.starts_on as string,
+    endsOn: (s.ends_on as string | null) ?? null,
+    ...summarize(evenings.filter((e) => e.seasonId === s.id), playerIds),
+  }));
+
+  return { evenings, seasons, totals: summarize(evenings, playerIds) };
+}
+
+export type GameProtocol = {
+  id: string;
+  no: number;
+  format: keyof typeof FORMAT_LABEL;
+  winner: Winner;
+  finishedAt: string | null;
+  eveningId: string;
+  eveningStartsAt: string;
+  hostName: string | null;
+  seats: { seat: number; name: string; role: Role }[];
+};
+
+/** Протокол одной завершённой партии. null — партии нет или она ещё не завершена. */
+export async function getGameProtocol(id: string): Promise<GameProtocol | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("club");
+
+  const db = getPublicClient();
+  if (!db) return null;
+
+  const res = await db
+    .from("games")
+    .select(
+      "id, game_no, format, status, winner, finished_at, evening_id, evenings(starts_at), " +
+        "host:players!games_host_player_id_fkey(display_name), " +
+        "game_players(seat, role, player:players(display_name))",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (res.error) throw new Error(`Не удалось загрузить партию: ${res.error.message}`);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- строка из select без типов базы
+  const g = res.data as any;
+  if (!g || g.status !== "finished" || !g.winner) return null;
+
+  const one = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
+  return {
+    id: g.id,
+    no: g.game_no,
+    format: g.format,
+    winner: g.winner,
+    finishedAt: g.finished_at,
+    eveningId: g.evening_id,
+    eveningStartsAt: one<{ starts_at: string }>(g.evenings)?.starts_at ?? g.finished_at,
+    hostName: one<{ display_name: string }>(g.host)?.display_name ?? null,
+    seats: (g.game_players as { seat: number; role: Role; player: unknown }[])
+      .map((p) => ({
+        seat: p.seat,
+        role: p.role,
+        name: one(p.player as { display_name: string } | null)?.display_name ?? "—",
+      }))
+      .sort((a, b) => a.seat - b.seat),
+  };
+}
