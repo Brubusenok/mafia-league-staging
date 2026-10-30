@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Logo } from "@/components/logo";
 import { NAV_ITEMS, isActive } from "@/lib/nav";
 
-export function Header() {
+export function Header({ authBar, authMenu }: { authBar: ReactNode; authMenu: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -50,12 +50,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden h-11 items-center rounded-control bg-accent px-5 text-sm font-medium transition-colors hover:bg-accent-hover sm:inline-flex"
-          >
-            Войти
-          </Link>
+          {authBar}
           <button
             type="button"
             className="inline-flex size-11 items-center justify-center rounded-control border border-border bg-surface lg:hidden"
@@ -101,15 +96,7 @@ export function Header() {
                 </li>
               );
             })}
-            <li className="py-3">
-              <Link
-                href="/login"
-                onClick={close}
-                className="flex h-12 items-center justify-center rounded-control bg-accent font-medium hover:bg-accent-hover"
-              >
-                Войти
-              </Link>
-            </li>
+            <li onClick={close}>{authMenu}</li>
           </ul>
         </nav>
       )}

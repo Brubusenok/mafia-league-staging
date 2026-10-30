@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { RsvpPanel } from "@/app/evenings/rsvp-panel";
 import { DEMO_FORMATS } from "@/lib/demo";
 import { getNextEvening, showDemoBadge } from "@/lib/data";
 import { Avatar, ButtonLink, Card, DemoBadge, PageHero } from "@/components/ui";
@@ -45,6 +47,14 @@ export default async function EveningsPage() {
                 </div>
               </div>
             </Card>
+
+            {e.id ? (
+              <Suspense fallback={<p className="text-muted">Загрузка…</p>}>
+                <RsvpPanel eveningId={e.id} />
+              </Suspense>
+            ) : (
+              <p className="text-center text-sm text-muted">Запись откроется, когда подключится база данных.</p>
+            )}
 
             <Card title="Участники" demo={demo}>
               <p className="mb-4 text-sm text-muted">
@@ -120,20 +130,6 @@ export default async function EveningsPage() {
           </div>
         </Card>
 
-        {e && (
-          <div className="pt-2">
-            <button
-              type="button"
-              disabled
-              className="h-14 w-full rounded-control bg-accent text-lg font-medium opacity-60"
-            >
-              Записаться на вечер
-            </button>
-            <p className="mt-2 text-center text-sm text-muted">
-              Запись откроется на следующем этапе.
-            </p>
-          </div>
-        )}
       </div>
     </>
   );

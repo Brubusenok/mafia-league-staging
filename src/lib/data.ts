@@ -18,6 +18,7 @@ export type Player = {
 export type RatedPlayer = Player & PlayerStats;
 
 export type NextEvening = {
+  id: string | null; // null — демо-режим без базы
   weekday: string;
   day: string;
   month: string;
@@ -93,7 +94,7 @@ export async function getNextEvening(): Promise<NextEvening | null> {
 
   const db = getPublicClient();
   if (!db) {
-    return { ...DEMO_EVENING, hostName: "Игрок 11" };
+    return { ...DEMO_EVENING, id: null, hostName: "Игрок 11" };
   }
 
   const rows = check(
@@ -117,6 +118,7 @@ export async function getNextEvening(): Promise<NextEvening | null> {
   const host = Array.isArray(ev.host) ? ev.host[0] : ev.host;
 
   return {
+    id: ev.id as string,
     ...eveningParts(ev.starts_at),
     place: ev.place,
     capacity: ev.capacity,

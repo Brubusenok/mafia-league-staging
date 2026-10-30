@@ -38,6 +38,8 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
+// Сессия обновляется на всех страницах (кроме файлов), чтобы кнопки входа и запись на вечер
+// не «разлогинивали» человека после истечения короткого токена.
 export const config = {
-  matcher: ["/admin/:path*", "/login"],
+  matcher: ["/((?!_next/static|_next/image|icon\\.svg|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

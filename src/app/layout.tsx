@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { Suspense } from "react";
 import { Footer } from "@/components/footer";
+import { AuthButton, AuthLinks } from "@/components/auth-button";
 import { Header } from "@/components/header";
 import { Logo } from "@/components/logo";
 import "./globals.css";
@@ -43,7 +44,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </header>
           }
         >
-          <Header />
+          <Header
+            authBar={
+              <Suspense fallback={<AuthLinks variant="bar" />}>
+                <AuthButton variant="bar" />
+              </Suspense>
+            }
+            authMenu={
+              <Suspense fallback={<AuthLinks variant="menu" />}>
+                <AuthButton variant="menu" />
+              </Suspense>
+            }
+          />
         </Suspense>
         <main className="flex-1">{children}</main>
         <Footer />
