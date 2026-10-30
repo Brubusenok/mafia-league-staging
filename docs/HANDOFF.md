@@ -40,7 +40,7 @@
 
 ### Репозитории и ветки
 - **Основной репозиторий:** `manarisqa/mafia-league-staging` (публичный, принадлежит владельцу).
-  Локально: `~/Documents/Mafia_Leaugue/mafia-league-staging`, удалённый адрес `origin`.
+  Локально: `~/Projects/Mafia_Leaugue/mafia-league-staging`, удалённый адрес `origin`.
 - **Форк для Vercel:** `Brubusenok/mafia-league-staging`, локально удалённый адрес `fork`.
   Причина: бесплатный Vercel не видит чужой репозиторий. Vercel собирает `main` из форка.
   Когда владелец заведёт Vercel из основного репозитория, форк можно удалить.
@@ -148,6 +148,8 @@
 - **Vercel Security Checkpoint**: из этой сети `curl` и CLI Vercel получают страницу проверки на бота (403).
   Обходить нельзя. `vercel login` из этой сети не работает вообще. Проверять сайт через браузер владельца.
   Скриншоты встроенного браузера в некоторые моменты не снимались, помогала проверка через DOM.
+- **Проект не хранить в «Документах»**: iCloud создаёт копии файлов с « 2», « 3» в имени, это ломает сборку
+  («Failed to open database»). Поэтому проект перенесён в `~/Projects`.
 - **Порт 3100 мог занять старый сервер**: перед проверкой убивать процесс по порту
   (`lsof -ti tcp:3100 | xargs -r kill`), иначе тестируется старая сборка.
 - **Кэш**: после изменений в админке вызывается `updateTag("club")`; во всех публичных
@@ -159,7 +161,7 @@
 
 ## 7. Как начать новую сессию
 
-1. Открыть папку проекта: `~/Documents/Mafia_Leaugue/mafia-league-staging`
+1. Открыть папку проекта: `~/Projects/Mafia_Leaugue/mafia-league-staging`
    (память Claude для проекта лежит под папкой `Mafia_Leaugue`; если нужна именно она, открыть родительскую папку).
 2. Попросить Claude прочитать `docs/HANDOFF.md`, `supabase/README.md` и `AGENTS.md`.
 3. Локальный запуск: `npm install`, затем `npm run dev` (http://localhost:3000). Проверки: `npm run lint`, `npm run build`.
