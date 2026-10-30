@@ -8,7 +8,7 @@ export const PAST = "00000000-0000-0000-0000-0000000000e0";
 export const CLASSIC = "00000000-0000-0000-0000-0000000000f1";
 export const SHORT = "00000000-0000-0000-0000-0000000000f2";
 export const HOST = "00000000-0000-0000-0000-000000000111";
-export async function database(upgrade = false, legacyOnly = false) {
+export async function database(upgrade = false, legacyOnly = false, preview = false) {
   const db = new PGlite();
   await db.exec(`create role anon; create role authenticated; create schema auth;
     create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);
@@ -28,7 +28,7 @@ export async function database(upgrade = false, legacyOnly = false) {
     }
     await db.exec(readFileSync(resolve("supabase/migrations", file), "utf8"));
   }
-  if (!upgrade) await db.exec(readFileSync(resolve("supabase/seed.sql"), "utf8"));
+  if (!upgrade) await db.exec(readFileSync(resolve(preview ? "supabase/preview-seed.sql" : "supabase/seed.sql"), "utf8"));
   await db.exec(`insert into auth.users values('${ADMIN}','admin@example.invalid','{}'),('${USER}','user@example.invalid','{}');
     insert into public.admins(user_id) values('${ADMIN}');
     update public.evenings set starts_at=now()+interval '30 days' where id='${EVENING}';`);

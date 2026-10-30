@@ -3,3 +3,4 @@
 import "./database.test";
 import "./rating.test";
 import "./referee.test";
+import "./identity.test";

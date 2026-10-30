@@ -34,6 +34,52 @@ async function snapshot() {
   return SnapshotSchema.parse((await db.query<{ state: unknown }>("select league_snapshot() as state")).rows[0].state);
 }
 
+test("signup publishes nickname in every projection and creates no administrator", async () => {
+  const id = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+  await db.query("insert into auth.users values($1,'private-name@example.invalid',$2)", [id, JSON.stringify({ nickname: "  Мандрівник  ", display_name: "DO NOT PUBLISH" })]);
+  const player = (await db.query<{ id: string; display_name: string; nickname: string }>("select * from players where user_id=$1", [id])).rows[0];
+  assert.equal(player.display_name, "Мандрівник");
+  assert.equal(player.nickname, "Мандрівник");
+  await actor(id);
+  assert.equal((await db.query<{ admin: boolean }>("select is_admin() as admin")).rows[0].admin, false);
+  await actor(null);
+  const wire = await snapshot();
+  assert.equal(wire.players.find((p) => p.id === player.id)?.display_name, "Мандрівник");
+  assert(!JSON.stringify(wire).includes("private-name"));
+  assert(projectLeague(wire).stats.has(player.id));
+});
+
+test("direct Auth signup cannot bypass invalid-nickname checks or expose email as nickname", async () => {
+  const id = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+  for (const nickname of ["", "X".repeat(41), "<Ник>", "Сова\u200b", "Fox\n7"]) {
+    await reject("insert into auth.users values($1,'private@example.invalid',$2)", [id, JSON.stringify({ nickname })], /Invalid gaming nickname/);
+  }
+  await db.query("insert into auth.users values($1,'private@example.invalid','{}')", [id]);
+  assert.equal((await db.query<{ display_name: string }>("select display_name from players where user_id=$1", [id])).rows[0].display_name, "Игрок");
+});
+
+test("nickname length boundary agrees with the existing database column", async () => {
+  const id = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+  await db.query("insert into auth.users values($1,'private@example.invalid',$2)", [id, JSON.stringify({ nickname: "Я".repeat(40) })]);
+  assert.equal((await db.query<{ nickname: string }>("select nickname from players where user_id=$1", [id])).rows[0].nickname, "Я".repeat(40));
+});
+
+test("isolated preview seed is complete, synthetic, future usable and refuses a second import", async () => {
+  const preview = await database(false, false, true);
+  try {
+    const wire = SnapshotSchema.parse((await preview.query<{ data: unknown }>("select league_snapshot() as data")).rows[0].data);
+    assert.equal(wire.games.length, 25);
+    const league = projectLeague(wire);
+    assert.equal(league.ratings.predictions.length, 20);
+    assert(wire.evenings.some((e) => e.status === "planned" && Date.parse(e.starts_at) > Date.now()));
+    assert(wire.players.some((p) => p.display_name === "Мандрівник"));
+    assert(!JSON.stringify(wire).includes("PRIVATE SYNTHETIC"));
+    await assert.rejects(preview.exec(readFileSync("supabase/preview-seed.sql", "utf8")), /empty isolated database/);
+    await preview.exec("rollback");
+    assert.equal((await preview.query<{ n: number }>("select count(*)::int as n from games")).rows[0].n, 25);
+  } finally { await preview.close(); }
+});
+
 test("upgrade preserves note in admin-only table and removes public column", async () => {
   await actor(ADMIN);
   assert.equal((await db.query<{ note: string }>("select note from evening_notes where evening_id=$1", [EVENING])).rows[0].note, "PRIVATE TEST NOTE");
