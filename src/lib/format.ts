@@ -126,3 +126,36 @@ export const GAME_STATUS_LABEL = {
   in_progress: "Черновик",
   finished: "Завершена",
 } as const;
+
+/** «14 ноября 2026» */
+export function longDate(iso: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: TZ,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
+/** «сент. 2026» — для дат сезона (в базе это день без времени). */
+export function monthYear(day: string) {
+  return new Intl.DateTimeFormat("ru-RU", { timeZone: "UTC", month: "short", year: "numeric" })
+    .format(new Date(`${day}T00:00:00Z`))
+    .replace(" г.", "");
+}
+
+/** Склонение: plural(3, ["партия", "партии", "партий"]) → «партии». */
+export function plural(n: number, [one, few, many]: [string, string, string]) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+
+/** «Красные», «Чёрные», «Ничья» — короткая подпись победителя. */
+export const WINNER_SHORT = {
+  red: "Красные",
+  black: "Чёрные",
+  draw: "Ничья",
+} as const;
