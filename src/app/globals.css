@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/*
+ * Цвета названы по роли, а не по оттенку: чтобы позже добавить светлую тему,
+ * достаточно переопределить эти переменные.
+ * Значения — из design_tokens_CANDIDATE.json (Black & Crimson).
+ *
+ * Красный здесь выполняет разные работы, поэтому токены раздельные,
+ * даже если сегодня значения совпадают:
+ *   --accent      — декоративный бренд-цвет (кнопки, активная вкладка)
+ *   --side-red    — «красные» (мирные) в игре; пока не используется
+ *   --error       — ошибки и опасные действия
+ */
+:root {
+  --canvas: #090a0c;
+  --surface: #18191d;
+  --elevated: #23242a;
+  --border: #35363d;
+
+  --text: #f4f1ef;
+  --text-muted: #a8a8b0;
+
+  --accent: #aa2335;
+  --accent-hover: #c02a3f;
+  --accent-text: #d95968;
+
+  --side-red: #aa2335;
+  --side-black: #a8a8b0;
+
+  --success: #52b68c;
+  --warning: #e8b66d;
+  --error: #ee6b79;
+
+  --radius-control: 10px;
+  --radius-panel: 12px;
+  --radius-card: 14px;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-side-red: var(--side-red);
+  --color-side-black: var(--side-black);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --radius-control: var(--radius-control);
+  --radius-panel: var(--radius-panel);
+  --radius-card: var(--radius-card);
+
+  --font-sans: var(--font-ui), system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
