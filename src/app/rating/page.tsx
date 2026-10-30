@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getRating, showDemoBadge } from "@/lib/data";
 import { Avatar, DemoBadge, PageHero } from "@/components/ui";
 
@@ -46,7 +47,9 @@ export default async function RatingPage() {
                     <td className="px-4 py-3">
                       <span className="flex items-center gap-3">
                         <Avatar name={p.name} size={36} />
-                        <span className="font-medium">{p.name}</span>
+                        <Link href={`/players/${p.id}`} className="font-medium hover:text-accent-text hover:underline">
+                          {p.name}
+                        </Link>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-medium tabular-nums">{p.rating}</td>

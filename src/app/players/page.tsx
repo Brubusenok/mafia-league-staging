@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getRating, showDemoBadge } from "@/lib/data";
 import { STATUS_LABEL } from "@/lib/format";
 import { Avatar, DemoBadge, PageHero } from "@/components/ui";
@@ -26,34 +27,39 @@ export default async function PlayersPage() {
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {players.map((p) => (
-              <li key={p.id} className="rounded-card border border-border bg-surface p-5">
-                <div className="flex items-center gap-3">
-                  <Avatar name={p.name} size={52} />
-                  <div className="min-w-0">
-                    <p className="truncate font-display text-lg font-bold">{p.name}</p>
-                    <span
-                      className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs ${
-                        p.status === "club_member"
-                          ? "bg-accent/20 text-accent-text"
-                          : "bg-elevated text-muted"
-                      }`}
-                    >
-                      {STATUS_LABEL[p.status]}
-                    </span>
+              <li key={p.id}>
+                <Link
+                  href={`/players/${p.id}`}
+                  className="block h-full rounded-card border border-border bg-surface p-5 transition-colors hover:border-accent-text"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar name={p.name} size={52} />
+                    <div className="min-w-0">
+                      <p className="truncate font-display text-lg font-bold">{p.name}</p>
+                      <span
+                        className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs ${
+                          p.status === "club_member"
+                            ? "bg-accent/20 text-accent-text"
+                            : "bg-elevated text-muted"
+                        }`}
+                      >
+                        {STATUS_LABEL[p.status]}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <dt className="text-muted">Партий</dt>
-                    <dd className="font-medium">{p.games}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted">Рейтинг</dt>
-                    <dd className="font-medium tabular-nums">
-                      {p.games > 0 ? p.rating : "нет оценки"}
-                    </dd>
-                  </div>
-                </dl>
+                  <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <dt className="text-muted">Партий</dt>
+                      <dd className="font-medium">{p.games}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted">Рейтинг</dt>
+                      <dd className="font-medium tabular-nums">
+                        {p.games > 0 ? p.rating : "нет оценки"}
+                      </dd>
+                    </div>
+                  </dl>
+                </Link>
               </li>
             ))}
           </ul>
