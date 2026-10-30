@@ -1,15 +1,22 @@
 import Link from "next/link";
+import { DEMO_FORMATS } from "@/lib/demo";
 import {
-  DEMO_EVENING,
-  DEMO_FORMATS,
-  DEMO_LEAGUE_STATS,
-  DEMO_RECENT_GAMES,
-  DEMO_TOP_PLAYERS,
-} from "@/lib/demo";
+  getLeagueStats,
+  getNextEvening,
+  getRecentGames,
+  getTopPlayers,
+  showDemoBadge,
+} from "@/lib/data";
 import { Avatar, ButtonLink, Card } from "@/components/ui";
 
-export default function Home() {
-  const e = DEMO_EVENING;
+export default async function Home() {
+  const [evening, recent, top, stats] = await Promise.all([
+    getNextEvening(),
+    getRecentGames(),
+    getTopPlayers(),
+    getLeagueStats(),
+  ]);
+  const demo = showDemoBadge();
 
   return (
     <>
@@ -42,30 +49,36 @@ export default function Home() {
       </section>
 
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-10 sm:px-6 lg:grid-cols-3">
-        <Card title="Ближайший игровой вечер" demo>
-          <div className="flex gap-4">
-            <div className="flex size-20 shrink-0 flex-col items-center justify-center rounded-card border border-border bg-elevated">
-              <span className="text-xs text-muted">{e.weekday}</span>
-              <span className="font-display text-3xl leading-none font-bold">{e.day}</span>
-              <span className="text-xs text-muted">{e.month}</span>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-bold">{e.format}</p>
-              <p className="mt-1 text-sm text-muted">
-                {e.capacity} игроков + отдельный ведущий
-              </p>
-            </div>
-          </div>
-          <ul className="mt-4 space-y-1.5 text-sm text-muted">
-            <li>
-              <span className="font-medium text-text">{e.signedUp} из {e.capacity}</span> уже записались
-            </li>
-            {e.hostConfirmed && <li>Ведущий подтверждён</li>}
-            {e.newbiesWelcome && <li>Новичкам можно прийти</li>}
-          </ul>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href="/evenings">Записаться на вечер</ButtonLink>
-          </div>
+        <Card title="Ближайший игровой вечер" demo={demo}>
+          {evening ? (
+            <>
+              <div className="flex gap-4">
+                <div className="flex size-20 shrink-0 flex-col items-center justify-center rounded-card border border-border bg-elevated">
+                  <span className="text-xs text-muted">{evening.weekday}</span>
+                  <span className="font-display text-3xl leading-none font-bold">{evening.day}</span>
+                  <span className="text-xs text-muted">{evening.month}</span>
+                </div>
+                <div>
+                  <p className="font-display text-2xl font-bold">Начало в {evening.time}</p>
+                  <p className="mt-1 text-sm text-muted">{evening.place}</p>
+                </div>
+              </div>
+              <ul className="mt-4 space-y-1.5 text-sm text-muted">
+                <li>
+                  <span className="font-medium text-text">
+                    {evening.signedUp} из {evening.capacity}
+                  </span>{" "}
+                  уже записались
+                </li>
+                {evening.hostName && <li>Ведущий: {evening.hostName}</li>}
+              </ul>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <ButtonLink href="/evenings">Записаться на вечер</ButtonLink>
+              </div>
+            </>
+          ) : (
+            <p className="text-muted">Ближайший вечер пока не назначен. Загляните позже.</p>
+          )}
         </Card>
 
         <Card title="О клубе">
@@ -103,31 +116,39 @@ export default function Home() {
           </p>
         </Card>
 
-        <Card title="Последние игры" demo>
-          <ul className="divide-y divide-border text-sm">
-            {DEMO_RECENT_GAMES.map((g) => (
-              <li key={g.date} className="flex items-center justify-between gap-3 py-3">
-                <span className="text-muted">{g.date}</span>
-                <span className="font-medium">{g.format}</span>
-                <span className="text-muted">{g.status}</span>
-              </li>
-            ))}
-          </ul>
+        <Card title="Последние игры" demo={demo}>
+          {recent.length > 0 ? (
+            <ul className="divide-y divide-border text-sm">
+              {recent.map((g) => (
+                <li key={g.id} className="flex items-center justify-between gap-3 py-3">
+                  <span className="text-muted">{g.date}</span>
+                  <span className="font-medium">{g.format}</span>
+                  <span className="text-muted">{g.status}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted">Сыгранных партий пока нет.</p>
+          )}
         </Card>
 
-        <Card title="Топ игроков" demo>
-          <ul className="space-y-3">
-            {DEMO_TOP_PLAYERS.map((p) => (
-              <li key={p.place} className="flex items-center gap-3">
-                <span className="w-5 text-center font-display text-lg text-accent-text">
-                  {p.place}
-                </span>
-                <Avatar name={p.name} />
-                <span className="flex-1 font-medium">{p.name}</span>
-                <span className="tabular-nums text-muted">{p.rating}</span>
-              </li>
-            ))}
-          </ul>
+        <Card title="Топ игроков" demo={demo}>
+          {top.length > 0 ? (
+            <ul className="space-y-3">
+              {top.map((p) => (
+                <li key={p.place} className="flex items-center gap-3">
+                  <span className="w-5 text-center font-display text-lg text-accent-text">
+                    {p.place}
+                  </span>
+                  <Avatar name={p.name} />
+                  <span className="flex-1 font-medium">{p.name}</span>
+                  <span className="tabular-nums text-muted">{p.rating}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted">Рейтинг появится после первых игр.</p>
+          )}
           <Link
             href="/rating"
             className="mt-3 inline-flex min-h-11 items-center text-sm text-accent-text hover:underline"
@@ -136,9 +157,9 @@ export default function Home() {
           </Link>
         </Card>
 
-        <Card title="Лига в цифрах" demo>
+        <Card title="Лига в цифрах" demo={demo}>
           <ul className="grid grid-cols-3 gap-3">
-            {DEMO_LEAGUE_STATS.map((s) => (
+            {stats.map((s) => (
               <li key={s.label}>
                 <p className="font-display text-3xl leading-none font-bold">{s.value}</p>
                 <p className="mt-2 text-xs text-muted">{s.label}</p>
